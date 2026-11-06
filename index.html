@@ -181,6 +181,21 @@ details.brandbox[open] summary{margin-bottom:12px}
 .slide .card .lines div{width:50%;display:flex;align-items:center;gap:14px;padding:9px 0}
 .slide .card .lines svg{width:32px;height:32px;flex:none}
 [hidden]{display:none!important}
+.wu-btn{border-color:var(--orange);color:var(--orange)}
+#wu .sheet-inner{max-width:760px}
+#wu textarea{width:100%;min-height:300px;background:var(--field);border:1px solid var(--rule);border-radius:12px;padding:14px;font-size:15px;line-height:1.5;resize:vertical}
+#wu h2{font-family:var(--display);font-weight:400;font-size:26px;letter-spacing:1.5px;margin:0 0 6px;text-transform:uppercase}
+#wu p.lead{color:var(--muted);margin:0 0 14px;font-size:14px}
+#wu .opts{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}
+@media (max-width:560px){#wu .opts{grid-template-columns:1fr}}
+#wu .acts{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+#wu .count{font-size:13px;color:var(--muted);margin-top:6px}
+.slide .txt{font-size:52px;line-height:1.38;font-weight:500}
+.slide .txt.md{font-size:46px}.slide .txt.sm{font-size:40px}
+.slide .txt{border-left:6px solid var(--orange);padding-left:44px}
+.slide .txt b{font-weight:700}
+.slide .txt .r{opacity:.78}
+.slide.ivory .txt{border-left-color:#E8650C}
 html,body{margin:0}
 body{padding-top:max(18px,env(safe-area-inset-top,0px))}
 #gate{position:fixed;inset:0;z-index:100;background:var(--navy);display:grid;place-items:center;padding:24px}
@@ -197,6 +212,7 @@ body{padding-top:max(18px,env(safe-area-inset-top,0px))}
   <div class="brand"><div class="sq" aria-hidden="true"></div><div><h1>Carousel Studio</h1><small>Asset by Israel · 1080 × 1350 Instagram slides</small></div></div>
   <div class="head-actions">
     <label for="starter" class="visually-hidden" style="position:absolute;left:-9999px">Start from</label>
+    <button class="btn wu-btn" id="openWu" type="button">Paste a write-up</button>
     <select id="starter" class="btn">
       <option value="">Start from…</option>
       <option value="cover">Single cover (for an old post)</option>
@@ -251,6 +267,18 @@ body{padding-top:max(18px,env(safe-area-inset-top,0px))}
   </section>
 </main>
 <div id="export" aria-hidden="true"></div>
+<div class="sheet" id="wu" hidden><div class="sheet-inner">
+  <h2>Write-up to carousel</h2>
+  <p class="lead">Paste your whole write-up. The app splits it into slides: a cover from your opening line, one idea per slide, and your contact card at the end. You can edit every slide after.</p>
+  <label for="wuText" style="font-weight:600;font-size:13px">Your write-up</label>
+  <textarea id="wuText" placeholder="Paste the full caption or write-up here…"></textarea>
+  <div class="count" id="wuCount">0 words</div>
+  <div class="opts">
+    <div class="field"><label for="wuKicker">Topic label for the cover (optional)</label><input id="wuKicker" placeholder="e.g. Market note"></div>
+    <div class="field"><label for="wuDensity">Text per slide</label><select id="wuDensity"><option value="short">Short (more slides, bigger text)</option><option value="medium" selected>Medium</option><option value="long">Long (fewer slides)</option></select></div>
+  </div>
+  <div class="acts"><button class="btn ghost" type="button" id="wuCancel">Cancel</button><button class="btn primary" type="button" id="wuGo">Make my carousel</button></div>
+</div></div>
 <div class="sheet" id="sheet" hidden><div class="sheet-inner"><strong>Press and hold each image, then choose “Save to Photos” (or right-click, “Save image as” on a computer).</strong><div id="sheetImgs"></div><button class="btn primary" type="button" id="sheetClose">Done</button></div></div>
 
 <script>
@@ -262,6 +290,7 @@ const TYPES = {
   list:      {label:"List (numbered or ticks)", fields:["kicker","head","body","items","style"]},
   quote:     {label:"Big quote", fields:["head","sub"]},
   compare:   {label:"Two-column table", fields:["kicker","head","left","right","items"]},
+  text:      {label:"Text slide (paragraph)", fields:["kicker","body"]},
   cta:       {label:"Closing slide (contact card)", fields:["kicker","head","sub"]},
 };
 const FIELD = {
@@ -350,6 +379,7 @@ function slideHTML(s,i,n){
     case "list": {const it=lines(s.items); body=`${k}<h2 class="h ${headSize(s.head,"l")}">${orange(s.head)}</h2>${s.body?`<p class="lead">${hilite(s.body)}</p>`:""}<div class="rows">${it.map((t,j)=>`<div class="rowi">${s.style==="check"?`<div class="chk" style="color:${s.theme==="orange"?"#FF7A1A":"#0B1626"}">${ICON.check}</div>`:`<div class="n">${String(j+1).padStart(2,"0")}</div>`}<div class="t">${orange(t)}</div></div>`).join("")}</div>`;break;}
     case "quote": body=`<div class="qmark">&ldquo;</div><div class="quote serif">${hilite(s.head)}</div>${s.sub?`<p class="small">${esc(s.sub)}</p>`:""}`;break;
     case "compare": {const it=lines(s.items).map(l=>l.split("|").map(x=>x.trim())); body=`${k}<h2 class="h m">${orange(s.head)}</h2><table class="cmp"><tr><th>${esc(s.left)}</th><th>${esc(s.right)}</th></tr>${it.map(r=>`<tr><td>${esc(r[0])}</td><td>${esc(r[1]||"")}</td></tr>`).join("")}</table>`;break;}
+    case "text": {const L=(s.body||"").replace(/\*/g,"").length; const ss=sentences(s.body||""); const f=ss.shift()||""; body=`${k}<p class="txt ${L>300?"sm":L>190?"md":""}"><b>${hilite(f)}</b> <span class="r">${hilite(ss.join(" "))}</span></p>`;break;}
     case "cta": body=`${k}<h2 class="h ${headSize(s.head,"l")}">${orange(s.head)}</h2>${s.sub?`<div class="sub serif">${hilite(s.sub)}</div>`:""}
       <div class="card"><div class="nm">${esc(b.name)}</div><div class="role">${esc(b.role)}</div><div class="lines">
       <div>${ICON.ig}${esc(b.ig)}</div><div>${ICON.ph}${esc(b.phone)}</div><div>${ICON.web}${esc(b.web)}</div><div>${ICON.pin}${esc(b.loc)}</div></div></div>`;break;
@@ -444,6 +474,74 @@ $("dlAll").onclick=async()=>{const btn=$("dlAll");btn.disabled=true;
     if(await shareFiles(files)){}else if(isTouch){showSheet(blobs);setStatus("","");}
     else{const zip=new JSZip();files.forEach(f=>zip.file(f.name,f));downloadBlob(`${slug()}.zip`,await zip.generateAsync({type:"blob"}));}}
   catch(e){setStatus("Couldn't make the images. Try again in a moment.","err");}btn.disabled=false;};
+
+/* ---------- write-up to carousel (rule-based, works offline) ---------- */
+const SIGN=/(@asset_by_israel|^\+?\s*234[\d\s]{6,}|^0[789]\d{9}$|Israel\s+Toluwalope|Your\s+Favou?rite\s+Real\s+Estate\s+Consultant)/i;
+const CTA_RE=/(conversation|talk to|let'?s talk|reach out|send me|send a|dm me|\bdm\b|message me|contact me|book a|call me|happy to|you know who to|get in touch|link in bio|consultation)/i;
+const LIST_RE=/^\s*(?:[-•*▪➤✅✔️→]|\d{1,2}[.)])\s+/u;
+function clean(t){return t.replace(/\r/g,"").replace(/[\p{Extended_Pictographic}\u{1F3FB}-\u{1F3FF}\uFE0F\u200D]/gu,"").replace(/[ \t]+/g," ").replace(/ +([.,!?])/g,"$1").replace(/[—–]/g,", ").trim();}
+function sentences(p){return (p.match(/[^.!?]+[.!?]+["”’)\]]*|[^.!?]+$/g)||[]).map(x=>x.trim()).filter(Boolean);}
+function starLast(h){const m=h.match(/^(.*?)(\S+?)([.!?:,]*)$/s);return m&&m[2].length>2?`${m[1]}*${m[2]}${m[3]}*`:h;}
+function writeupToSlides(raw,kicker,density){
+  const lines=clean(raw).split("\n").map(l=>l.trim()).filter(l=>!SIGN.test(l));
+  // build blocks: paragraphs and lists
+  const blocks=[];let cur=null;
+  for(const l of lines){
+    if(!l){cur=null;continue;}
+    if(LIST_RE.test(l)){const item=l.replace(LIST_RE,"").trim();if(cur&&cur.t==="list")cur.items.push(item);else{cur={t:"list",items:[item]};blocks.push(cur);}continue;}
+    if(cur&&cur.t==="p"&&!/[.!?:"”]$/.test(cur.text)){cur.text+=" "+l;continue;}
+    cur={t:"p",text:l};blocks.push(cur);
+  }
+  const paras=blocks.filter(b=>b.t==="p"||b.items.length);
+  if(!paras.length)return null;
+  // cover
+  const first=paras.shift(); let fs=first.t==="p"?sentences(first.text):[first.items.join(". ")];
+  const cover=S("cover","navy",{kicker:kicker||"",head:starLast(fs.shift()||"")});
+  if(fs[0]&&fs[0].length<=90){cover.sub=fs.shift();}
+  if(fs.length)paras.unshift({t:"p",text:fs.join(" ")});
+  // closing CTA
+  let cta=null; const last=paras[paras.length-1];
+  if(last&&last.t==="p"&&CTA_RE.test(last.text)&&last.text.length<420){paras.pop();const ls=sentences(last.text);
+    const short=ls.find(x=>x.length<=70);cta=S("cta","orange",{kicker:"Let's talk",head:short||"Let's talk.",sub:short?"":(ls.join(" ").length<=200?ls.join(" "):"Send me a message today.")});
+    if(short&&ls.length>1){const rest=ls.filter(x=>x!==short).join(" ");if(rest.length<=120)cta.sub=rest;}}
+  if(!cta)cta=S("cta","orange",{kicker:"Let's talk",head:"Ready to make your move?",sub:"Send me a message today."});
+  const budgets={short:[150,190,240,300],medium:[230,290,350,420],long:[330,400,480,560]}[density]||[230,290,350,420];
+  let body=[];
+  for(const B of budgets){body=chunk(paras,B);if(body.length<=18)break;}
+  if(body.length>18)body=body.slice(0,18);
+  // rhythm: one ivory slide near the middle
+  const mid=body.findIndex((s,i)=>i>=Math.floor(body.length/2)-1&&s.type!=="quote");
+  if(body.length>=3&&mid>-1)body[mid].theme="ivory";
+  return [cover,...body,cta];
+}
+function chunk(paras,B){
+  const out=[];let buf=[];let len=0;
+  const flush=()=>{if(!buf.length)return;out.push(makeSlide(buf));buf=[];len=0;};
+  for(const p of paras){
+    if(p.t==="list"){let lead="";if(buf.length&&/:$/.test(buf[buf.length-1])){lead=buf.pop();}flush();
+      for(let i=0;i<p.items.length;i+=5)out.push(S("list","navy",{head:i===0&&lead.length<=70?starLast(lead):"",body:i===0&&lead.length>70?lead:"",items:p.items.slice(i,i+5).join("\n"),style:"check"}));continue;}
+    const t=p.text;
+    if(/^["“].+["”]$/.test(t)&&t.length<=200){flush();out.push(S("quote","navy",{head:t.replace(/^["“]|["”]$/g,"")}));continue;}
+    const ss=sentences(t);
+    if(len&&len+t.length>B*0.6)flush();
+    for(const x of ss){if(len&&len+x.length>B)flush();buf.push(x);len+=x.length+1;}
+    if(len>B*0.45)flush();
+  }
+  flush();return out;
+}
+function makeSlide(ss){
+  const all=ss.join(" ");
+  if(ss.length===1&&all.length<=95)return S("statement","navy",{head:starLast(all)});
+  if(ss[0].length<=70&&ss.length>1){const rest=ss.slice(1).join(" ");return S("statement","navy",{head:starLast(ss[0]),body:rest});}
+  return S("text","navy",{body:all});
+}
+$("openWu").onclick=()=>{$("wu").hidden=false;setTimeout(()=>$("wuText").focus(),50);};
+$("wuCancel").onclick=()=>{$("wu").hidden=true;};
+$("wuText").oninput=()=>{const n=($("wuText").value.match(/\S+/g)||[]).length;$("wuCount").textContent=n+" words";};
+$("wuGo").onclick=()=>{const sl=writeupToSlides($("wuText").value,$("wuKicker").value.trim(),$("wuDensity").value);
+  if(!sl){$("wuCount").textContent="Paste your write-up first.";return;}
+  state.slides=sl;state.cur=0;$("wu").hidden=true;commit(true);
+  setStatus(`Made ${sl.length} slides. Check the cover headline first, then tap through each slide.`,"ok");window.scrollTo({top:0,behavior:"smooth"});};
 
 renderAll();
 document.fonts&&document.fonts.ready.then(fit);
